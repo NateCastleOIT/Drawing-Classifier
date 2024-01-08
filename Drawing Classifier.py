@@ -12,6 +12,7 @@ from tkinter import *
 import tkinter.messagebox
 from tkinter import simpledialog
 from tkinter import filedialog
+import tqdm
 
 from sklearn.svm import LinearSVC
 from sklearn.naive_bayes import GaussianNB
@@ -19,6 +20,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from skimage.transform import rotate, rescale
 
 
 class DrawingClassifier:
@@ -39,8 +41,7 @@ class DrawingClassifier:
         self.brush_weight = 15
         
         self.classes_prompt()
-        self.init_gui()
-        
+        self.init_gui()     
         
     def classes_prompt(self):
         msg = Tk()
@@ -158,7 +159,7 @@ class DrawingClassifier:
     def save(self, class_num):
         self.image1.save("temp.png")
         img = PIL.Image.open("temp.png")
-        img.thumbnail((50,50), PIL.Image.ANTIALIAS)
+        img.thumbnail((50,50), PIL.Image.LANCZOS)
         
         if class_num == 1:
             img.save(f"{self.proj_name}/{self.class1}/{self.class1_counter}.png", "PNG")
@@ -184,33 +185,122 @@ class DrawingClassifier:
         self.canvas.delete("all")
         self.draw.rectangle([0,0,1000,1000], fill="white")
     
+    def augment_image(self, class_num, x):
+        angles = list(range(0, 360, 15)) # Generate angles at 15-degree intervals
+        augmented_images = []
+        
+        self.image1.save("temp.png")
+        img = PIL.Image.open("temp.png")
+        img.thumbnail((50,50), PIL.Image.LANCZOS)
+        
+        if class_num == 1:
+            # Load the original image outside the loop
+            og_img = cv.imread(f"{self.proj_name}/{self.class1}/{x}.png")[:, :, 0]
+            og_img = np.array(og_img, dtype=np.uint8)
+            og_img.reshape(2500)
+            
+            for ang in angles:
+                #Rotate image
+                rotated_img = rotate(og_img, angle=ang)
+                rotated_pil = PIL.Image.fromarray(rotated_img, mode='L')
+                
+                #Save the rotated image
+                rotated_pil.save(f"{self.proj_name}/{self.class1}/{x}_{ang}.png", format="PNG")
+                augmented_images.append(rotated_pil)
+                
+                #Flip the image
+                flipped_img = np.flip(rotated_img, axis=1)
+                flipped_pil = PIL.Image.fromarray(flipped_img, mode='L')
+                
+                # Save flipped image
+                flipped_img.save(f"{self.proj_name}/{self.class1}/{x}_{ang}_flipped.png", format="PNG")
+                augmented_images.append(flipped_pil)
+                
+        if class_num == 2:    
+            for ang in angles:
+                img.save(f"{self.proj_name}/{self.class2}/{x}_{ang}.png", "PNG")
+                rotated_img = cv.imread(f"{self.proj_name}/{self.class2}/{x}.png")[:, :, 0]
+                rotated_img.reshape(2500)
+                rotated_img = rotate(img, angle=ang)
+                augmented_images.append(rotated_img)
+                
+                flipped_img = img.save(f"{self.proj_name}/{self.class2}/{x}_{ang}_flipped.png")
+                flipped_img = cv.imread(f"{self.proj_name}/{self.class2}/{x}_{ang}_flipped.png")[:, :, 0]
+                flipped_img.reshape(2500)
+                flipped_img = np.flip(rotated_img, axis=1)
+                augmented_images.append(flipped_img) # Flip image and save
+                
+        if class_num == 3:        
+            for ang in angles:
+                img.save(f"{self.proj_name}/{self.class3}/{x}_{ang}.png", "PNG")
+                rotated_img = cv.imread(f"{self.proj_name}/{self.class3}/{x}_{ang}_flipped.png")[:, :, 0]
+                rotated_img.reshape(2500)
+                rotated_img = rotate(img, angle=ang)
+                augmented_images.append(rotated_img)
+                
+                flipped_img = img.save(f"{self.proj_name}/{self.class3}/{x}_{ang}_flipped.png")
+                flipped_img = cv.imread(f"{self.proj_name}/{self.class3}/{x}_{ang}_flipped.png")[:, :, 0]
+                flipped_img.reshape(2500)
+                flipped_img = np.flip(rotated_img, axis=1)
+                augmented_images.append(flipped_img) # Flip image and save
+            
+        return augmented_images
+    
+    # TODO: Adding data processing for image resizing
+    # TODO: GUI Enhancments
+    # TODO: Error Handling
     def train_model(self):
-        img_list = np.array([])
-        class_list = np.array([])
+        img_list = []
+        class_list = []
         
-        for x in range(1, self.class1_counter):
-            img = cv.imread(f"{self.proj_name}/{self.class1}/{x}.png")[:, :, 0]
-            img.reshape(2500)
-            img_list = np.append(img_list, [img])
-            class_list = np.append(class_list, 1)
+        print(f"Unique classes: {np.unique(class_list)}")
+        
+        try:
             
-        for x in range(1, self.class2_counter):
-            img = cv.imread(f"{self.proj_name}/{self.class2}/{x}.png")[:, :, 0]
-            img.reshape(2500)
-            img_list = np.append(img_list, [img])
-            class_list = np.append(class_list, 2)
-        
-        for x in range(1, self.class3_counter):
-            img = cv.imread(f"{self.proj_name}/{self.class3}/{x}.png")[:, :, 0]
-            img.reshape(2500)
-            img_list = np.append(img_list, [img])
-            class_list = np.append(class_list, 3)
+            for x in range(1, self.class1_counter):
+                img = cv.imread(f"{self.proj_name}/{self.class1}/{x}.png")[:, :, 0]
+                img.reshape(2500)
+                
+                # Data Augmentation - Rotate and Rescale: 15-degree + flipped
+                augmented_imgs = self.augment_image(1, x)
+                
+                # Add new augmented images
+                img_list.extend(augmented_imgs)
+                class_list.extend([1] * len(augmented_imgs))
+            print(f"Unique classes: {np.unique(class_list)}")
+                
+            for x in range(1, self.class2_counter):
+                img = cv.imread(f"{self.proj_name}/{self.class2}/{x}.png")[:, :, 0]
+                img.reshape(2500)
+                
+                # Data Augmentation - Rotate and Rescale: 15-degree + flipped
+                augmented_imgs = self.augment_image(1, x)
+                
+                # Add new augmented images
+                img_list.extend(augmented_imgs)
+                class_list.extend([1] * len(augmented_imgs))
+            print(f"Unique classes: {np.unique(class_list)}")
             
-        img_list = img_list.reshape(self.class1_counter -1 + self.class2_counter - 1 + self.class3_counter - 1, 2500)
-        
-        self.clf.fit(img_list, class_list)
-        
-        tkinter.messagebox.showinfo("Nate Castle Drawing Classifier", "Model successsfully trained!", parent=self.root) 
+            for x in range(1, self.class3_counter):
+                # Data Augmentation - Rotate and Rescale: 15-degree + flipped
+                augmented_imgs = self.augment_image(1, x)
+                
+                # Add new augmented images
+                img_list.extend(augmented_imgs)
+                class_list.extend([1] * len(augmented_imgs))
+            print(f"Unique classes: {np.unique(class_list)}")
+                
+            #assemble the np array at the end
+            img_list = np.array(img_list).reshape(-1, 2500)
+            class_list = np.array(class_list)
+            print(f"Unique classes: {np.unique(class_list)}")
+            
+            self.clf.fit(img_list, class_list)
+            
+            tkinter.messagebox.showinfo("Nate Castle Drawing Classifier", "Model successsfully trained!", parent=self.root)
+            
+        except Exception as e:
+            print(f"An error occurred: {str(e)}")
     
     def save_model(self):
         file_path = filedialog.asksaveasfilename(defaultextension="pickle")
@@ -244,7 +334,7 @@ class DrawingClassifier:
     def predict(self):
         self.image1.save("temp.png")
         img = PIL.Image.open("temp.png")
-        img.thumbnail((50,50), PIL.Image.ANTIALIAS)
+        img.thumbnail((50,50), PIL.Image.LANCZOS)
         img.save("predictshape.png", "PNG")
         
         img = cv.imread("predictshape.png")[:, :, 0]
