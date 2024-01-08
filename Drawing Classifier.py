@@ -21,7 +21,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 class DrawingClassifier:
     
-    def __init__(self)
+    def __init__(self):
     
         self.class1, self.class2, self.class3  = None, None, None
         self.class1_counter, self.class2_counter, self.class3_counter = None, None, None
@@ -63,9 +63,9 @@ class DrawingClassifier:
             self.proj_name = data['pname']
             
         else:
-            self.class1 = simpledialog.askstring["Class 1", "What is the first clas called?", parent=msg]
-            self.class2 = simpledialog.askstring["Class 2", "What is the second clas called?", parent=msg]
-            self.class3 = simpledialog.askstring["Class 3", "What is the third clas called?", parent=msg]
+            self.class1 = simpledialog.askstring("Class 1", "What is the first clas called?", parent=msg)
+            self.class2 = simpledialog.askstring("Class 2", "What is the second clas called?", parent=msg)
+            self.class3 = simpledialog.askstring("Class 3", "What is the third clas called?", parent=msg)
             
             self.class1_counter = 1
             self.class2_counter = 1
@@ -78,7 +78,7 @@ class DrawingClassifier:
             os.mkdir(self.class1)
             os.mkdir(self.class2)
             os.mkdir(self.class3)
-            os.chdir(..)
+            os.chdir("..")
     
     def init_gui(self):
         WIDTH = 500
@@ -150,16 +150,32 @@ class DrawingClassifier:
         pass
     
     def save(self, class_num):
-        pass
+        filename = "temp.png"
+        self.image1.save("temp.png")
+        img = PIL.Image.open("temp.png")
+        img.thumbnail((50,50), PIL.Image.ANTIALIAS)
+        
+        if class_num == 1:
+            img.save(f"{self.proj_name}/{self.class1}/{self.class1_counter}.png", "PNG")
+            self.class1_counter += 1
+        elif class_num == 2:
+            img.save(f"{self.proj_name}/{self.class2}/{self.class2_counter}.png", "PNG")
+            self.class2_counter += 1
+        elif class_num == 3:
+            img.save(f"{self.proj_name}/{self.class3}/{self.class3_counter}.png", "PNG")
+            self.class3_counter += 1
     
     def brushminus(self):
-        pass
+        if self.brush_weight > 1:
+            self.brush_weight -= 1
     
     def brushplus(self):
-        pass
+        self.brush_weight += 1
     
     def clear(self):
-        pass
+        # Clear the canvas data, set the image to pure white
+        self.canvas.delete("all")
+        self.draw.rectangle([0,0,1000,1000] fill="white")
     
     def train_model(self):
         pass
