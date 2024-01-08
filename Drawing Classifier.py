@@ -14,7 +14,7 @@ from tkinter import simpledialog
 
 from sklearn.svm import LinearSVC
 from sklearn.naive_bayes import GaussianNB
-from sklean.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 
@@ -89,7 +89,7 @@ class DrawingClassifier:
         self.root.title(f"Nate Castle Drawing Classifier Alpha v0.1 - {self.proj_name}")
         
         self.canvas = Canvas(self.root, width=WIDTH-10, height=HEIGHT-10, bg="white")
-        self.pack(expand=YES, fill=BOTH)
+        self.canvas.pack(expand=YES, fill=BOTH)
         # Binds button 1 (mouse 1) being clicked along with motion to the self.paint method
         self.canvas.bind("<B1-Motion>", self.paint)
         
@@ -109,7 +109,7 @@ class DrawingClassifier:
         class2_btn = Button(btn_frame, text=self.class2, command=lambda: self.save(2))
         class2_btn.grid(row=0, column=1, sticky=W + E)
         
-        class3_btn = Button(btn_frame, text=self.class2, command=lambda: self.save(3))
+        class3_btn = Button(btn_frame, text=self.class3, command=lambda: self.save(3))
         class3_btn.grid(row=0, column=2, sticky=W + E)
         
         bm_btn = Button(btn_frame, text="Brush-", command=self.brushminus)
@@ -147,10 +147,13 @@ class DrawingClassifier:
         self.root.mainloop()
         
     def paint(self, event):
-        pass
+        x1, y1 = (event.x - 1), (event.y - 1)
+        x2, y2 = (event.x + 1), (event.y + 1)
+        
+        self.canvas.create_rectangle(x1, y1, x2, y2, fill="black", width=self.brush_weight)
+        self.draw.rectangle([x1, y2, x2 + self.brush_weight, y2 + self.brush_weight], fill="black", width=self.brush_weight)
     
     def save(self, class_num):
-        filename = "temp.png"
         self.image1.save("temp.png")
         img = PIL.Image.open("temp.png")
         img.thumbnail((50,50), PIL.Image.ANTIALIAS)
@@ -164,6 +167,8 @@ class DrawingClassifier:
         elif class_num == 3:
             img.save(f"{self.proj_name}/{self.class3}/{self.class3_counter}.png", "PNG")
             self.class3_counter += 1
+            
+        self.clear()
     
     def brushminus(self):
         if self.brush_weight > 1:
@@ -175,7 +180,7 @@ class DrawingClassifier:
     def clear(self):
         # Clear the canvas data, set the image to pure white
         self.canvas.delete("all")
-        self.draw.rectangle([0,0,1000,1000] fill="white")
+        self.draw.rectangle([0,0,1000,1000], fill="white")
     
     def train_model(self):
         pass
@@ -194,3 +199,8 @@ class DrawingClassifier:
     
     def save_all(self):
         pass
+    
+    def on_closing(self):
+        pass
+    
+DrawingClassifier()
