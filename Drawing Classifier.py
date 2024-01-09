@@ -187,7 +187,7 @@ class DrawingClassifier:
         self.draw.rectangle([0,0,1000,1000], fill="white")
     
     def augment_image(self, class_num, x):
-        rotational_angle = 90
+        rotational_angle = 15
         angles = list(range(rotational_angle, 360, rotational_angle)) # Generate angles at X-degree intervals, starting at X since 0 degrees is the original image
         augmented_images = []
         
@@ -260,7 +260,6 @@ class DrawingClassifier:
             
         return augmented_images
     
-    # TODO: Adding data processing for image resizing
     # TODO: GUI Enhancments
     # TODO: Error Handling
     def train_model(self):
@@ -347,7 +346,6 @@ class DrawingClassifier:
             
         self.status_label.config(text=f"Current Model: {type(self.clf).__name__}")
             
-    
     def predict(self):
         self.image1.save("temp.png")
         img = PIL.Image.open("temp.png")
