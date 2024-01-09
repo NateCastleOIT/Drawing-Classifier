@@ -6,6 +6,7 @@ import PIL
 import PIL.Image
 import PIL.ImageDraw
 import cv2 as cv
+import imutils
 
 # Do no import all
 from tkinter import *
@@ -186,7 +187,8 @@ class DrawingClassifier:
         self.draw.rectangle([0,0,1000,1000], fill="white")
     
     def augment_image(self, class_num, x):
-        angles = list(range(0, 360, 15)) # Generate angles at 15-degree intervals
+        rotational_angle = 90
+        angles = list(range(rotational_angle, 360, rotational_angle)) # Generate angles at X-degree intervals, starting at X since 0 degrees is the original image
         augmented_images = []
         
         self.image1.save("temp.png")
@@ -196,12 +198,10 @@ class DrawingClassifier:
         if class_num == 1:
             # Load the original image outside the loop
             og_img = cv.imread(f"{self.proj_name}/{self.class1}/{x}.png")[:, :, 0]
-            og_img = np.array(og_img, dtype=np.uint8)
-            og_img.reshape(2500)
             
             for ang in angles:
                 #Rotate image
-                rotated_img = rotate(og_img, angle=ang)
+                rotated_img = imutils.rotate(og_img, angle=ang)
                 rotated_pil = PIL.Image.fromarray(rotated_img, mode='L')
                 
                 #Save the rotated image
@@ -213,36 +213,50 @@ class DrawingClassifier:
                 flipped_pil = PIL.Image.fromarray(flipped_img, mode='L')
                 
                 # Save flipped image
-                flipped_img.save(f"{self.proj_name}/{self.class1}/{x}_{ang}_flipped.png", format="PNG")
+                flipped_pil.save(f"{self.proj_name}/{self.class1}/{x}_{ang}_flipped.png", format="PNG")
                 augmented_images.append(flipped_pil)
                 
-        if class_num == 2:    
+        if class_num == 2:
+            # Load the original image outside the loop
+            og_img = cv.imread(f"{self.proj_name}/{self.class2}/{x}.png")[:, :, 0]
+             
             for ang in angles:
-                img.save(f"{self.proj_name}/{self.class2}/{x}_{ang}.png", "PNG")
-                rotated_img = cv.imread(f"{self.proj_name}/{self.class2}/{x}.png")[:, :, 0]
-                rotated_img.reshape(2500)
-                rotated_img = rotate(img, angle=ang)
-                augmented_images.append(rotated_img)
+                #Rotate image
+                rotated_img = imutils.rotate(og_img, angle=ang)
+                rotated_pil = PIL.Image.fromarray(rotated_img, mode='L')
                 
-                flipped_img = img.save(f"{self.proj_name}/{self.class2}/{x}_{ang}_flipped.png")
-                flipped_img = cv.imread(f"{self.proj_name}/{self.class2}/{x}_{ang}_flipped.png")[:, :, 0]
-                flipped_img.reshape(2500)
+                #Save the rotated image
+                rotated_pil.save(f"{self.proj_name}/{self.class2}/{x}_{ang}.png", format="PNG")
+                augmented_images.append(rotated_pil)
+                
+                #Flip the image
                 flipped_img = np.flip(rotated_img, axis=1)
-                augmented_images.append(flipped_img) # Flip image and save
+                flipped_pil = PIL.Image.fromarray(flipped_img, mode='L')
                 
-        if class_num == 3:        
+                # Save flipped image
+                flipped_pil.save(f"{self.proj_name}/{self.class2}/{x}_{ang}_flipped.png", format="PNG")
+                augmented_images.append(flipped_pil)
+                
+        if class_num == 3:
+            # Load the original image outside the loop
+            og_img = cv.imread(f"{self.proj_name}/{self.class3}/{x}.png")[:, :, 0]
+                 
             for ang in angles:
-                img.save(f"{self.proj_name}/{self.class3}/{x}_{ang}.png", "PNG")
-                rotated_img = cv.imread(f"{self.proj_name}/{self.class3}/{x}_{ang}_flipped.png")[:, :, 0]
-                rotated_img.reshape(2500)
-                rotated_img = rotate(img, angle=ang)
-                augmented_images.append(rotated_img)
+                #Rotate image
+                rotated_img = imutils.rotate(og_img, angle=ang)
+                rotated_pil = PIL.Image.fromarray(rotated_img, mode='L')
                 
-                flipped_img = img.save(f"{self.proj_name}/{self.class3}/{x}_{ang}_flipped.png")
-                flipped_img = cv.imread(f"{self.proj_name}/{self.class3}/{x}_{ang}_flipped.png")[:, :, 0]
-                flipped_img.reshape(2500)
+                #Save the rotated image
+                rotated_pil.save(f"{self.proj_name}/{self.class3}/{x}_{ang}.png", format="PNG")
+                augmented_images.append(rotated_pil)
+                
+                #Flip the image
                 flipped_img = np.flip(rotated_img, axis=1)
-                augmented_images.append(flipped_img) # Flip image and save
+                flipped_pil = PIL.Image.fromarray(flipped_img, mode='L')
+                
+                # Save flipped image
+                flipped_pil.save(f"{self.proj_name}/{self.class3}/{x}_{ang}_flipped.png", format="PNG")
+                augmented_images.append(flipped_pil)
             
         return augmented_images
     
@@ -252,48 +266,51 @@ class DrawingClassifier:
     def train_model(self):
         img_list = []
         class_list = []
-        
-        print(f"Unique classes: {np.unique(class_list)}")
-        
+                
         try:
             
             for x in range(1, self.class1_counter):
                 img = cv.imread(f"{self.proj_name}/{self.class1}/{x}.png")[:, :, 0]
                 img.reshape(2500)
                 
-                # Data Augmentation - Rotate and Rescale: 15-degree + flipped
+                # Data Augmentation - Rotate and Rescale: y-degrees + flipped
                 augmented_imgs = self.augment_image(1, x)
+                
+                # Reshape each image to a consistent shape
+                augmented_imgs = [np.reshape(img, 2500) for img in augmented_imgs]
                 
                 # Add new augmented images
                 img_list.extend(augmented_imgs)
                 class_list.extend([1] * len(augmented_imgs))
-            print(f"Unique classes: {np.unique(class_list)}")
                 
             for x in range(1, self.class2_counter):
                 img = cv.imread(f"{self.proj_name}/{self.class2}/{x}.png")[:, :, 0]
                 img.reshape(2500)
                 
-                # Data Augmentation - Rotate and Rescale: 15-degree + flipped
-                augmented_imgs = self.augment_image(1, x)
+                # Data Augmentation - Rotate and Rescale: y-degrees + flipped
+                augmented_imgs = self.augment_image(2, x)
+                
+                # Reshape each image to a consistent shape
+                augmented_imgs = [np.reshape(img, 2500) for img in augmented_imgs]
                 
                 # Add new augmented images
                 img_list.extend(augmented_imgs)
-                class_list.extend([1] * len(augmented_imgs))
-            print(f"Unique classes: {np.unique(class_list)}")
+                class_list.extend([2] * len(augmented_imgs))
             
             for x in range(1, self.class3_counter):
-                # Data Augmentation - Rotate and Rescale: 15-degree + flipped
-                augmented_imgs = self.augment_image(1, x)
+                # Data Augmentation - Rotate and Rescale: y-degrees + flipped
+                augmented_imgs = self.augment_image(3, x)
+                
+                # Reshape each image to a consistent shape
+                augmented_imgs = [np.reshape(img, 2500) for img in augmented_imgs]
                 
                 # Add new augmented images
                 img_list.extend(augmented_imgs)
-                class_list.extend([1] * len(augmented_imgs))
-            print(f"Unique classes: {np.unique(class_list)}")
+                class_list.extend([3] * len(augmented_imgs))
                 
-            #assemble the np array at the end
-            img_list = np.array(img_list).reshape(-1, 2500)
+            # Assemble the np array at the end
+            img_list = np.array(img_list)
             class_list = np.array(class_list)
-            print(f"Unique classes: {np.unique(class_list)}")
             
             self.clf.fit(img_list, class_list)
             
